@@ -1735,6 +1735,10 @@ func (ch *ConversationsHandler) parseParamsToolConversations(ctx context.Context
 		channel = resolvedChannel
 	}
 
+	if err := ch.checkChannelWhitelist(channel); err != nil {
+		return nil, err
+	}
+
 	return &conversationParams{
 		channel:  channel,
 		limit:    paramLimit,

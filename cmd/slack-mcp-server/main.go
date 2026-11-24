@@ -12,6 +12,7 @@ import (
 
 	"github.com/korotovsky/slack-mcp-server/pkg/provider"
 	"github.com/korotovsky/slack-mcp-server/pkg/server"
+	"github.com/korotovsky/slack-mcp-server/pkg/whitelist"
 	"github.com/mattn/go-isatty"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -68,7 +69,22 @@ func main() {
 		)
 	}
 
+	channelWhitelist, err := whitelist.FromEnv()
+	if err != nil {
+		logger.Fatal("error in "+whitelist.EnvVar,
+			zap.String("context", "console"),
+			zap.Error(err),
+		)
+	}
+
 	p := provider.New(transport, logger)
+	p.SetChannelWhitelist(channelWhitelist)
+	if channelWhitelist != nil {
+		logger.Info("Channel whitelist active",
+			zap.String("context", "console"),
+			zap.Int("conversations", channelWhitelist.Len()),
+		)
+	}
 	s := server.NewMCPServer(p, logger, enabledTools)
 
 	if noCache {

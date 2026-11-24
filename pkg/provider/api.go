@@ -18,6 +18,7 @@ import (
 	"github.com/korotovsky/slack-mcp-server/pkg/limiter"
 	"github.com/korotovsky/slack-mcp-server/pkg/provider/edge"
 	"github.com/korotovsky/slack-mcp-server/pkg/transport"
+	"github.com/korotovsky/slack-mcp-server/pkg/whitelist"
 	"github.com/rusq/slackdump/v3/auth"
 	"github.com/slack-go/slack"
 	"go.uber.org/zap"
@@ -299,6 +300,8 @@ type ApiProvider struct {
 	lastForcedChannelsRefresh time.Time
 	channelsMu                sync.RWMutex // protects lastForcedChannelsRefresh
 	fetchChannelsMu           sync.Mutex   // serializes fetchAndStoreChannels calls
+
+	channelWhitelist *whitelist.Whitelist // fork: SLACK_MCP_CHANNEL_WHITELIST, see channel_whitelist.go
 }
 
 func NewMCPSlackClient(authProvider auth.Provider, logger *zap.Logger) (*MCPSlackClient, error) {

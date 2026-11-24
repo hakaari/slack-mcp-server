@@ -79,6 +79,9 @@ func (ch *ChannelsHandler) ChannelsResource(ctx context.Context, request mcp.Rea
 	ch.logger.Debug("Retrieved channels from provider", zap.Int("count", len(channels)))
 
 	for _, channel := range channels {
+		if !ch.apiProvider.ChannelWhitelist().Allows(channel.ID) {
+			continue
+		}
 		channelList = append(channelList, Channel{
 			ID:          channel.ID,
 			Name:        channel.Name,
@@ -165,6 +168,7 @@ func (ch *ChannelsHandler) ChannelsHandler(ctx context.Context, request mcp.Call
 	ch.logger.Debug("Total channels available", zap.Int("count", len(allChannels)))
 
 	channels := filterChannelsByTypes(allChannels, channelTypes)
+	channels = filterChannelsByWhitelist(channels, ch.apiProvider.ChannelWhitelist())
 	ch.logger.Debug("Channels after filtering by type", zap.Int("count", len(channels)))
 
 	if query != "" {
@@ -285,6 +289,9 @@ func (ch *ChannelsHandler) ChannelsMeHandler(ctx context.Context, request mcp.Ca
 		}
 
 		for _, c := range channels {
+			if !ch.apiProvider.ChannelWhitelist().Allows(c.ID) {
+				continue
+			}
 			allChannels = append(allChannels, provider.MapChannelFromSlack(c, usersMap))
 		}
 

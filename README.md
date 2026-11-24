@@ -298,8 +298,22 @@ Fetches a CSV directory of all users in the workspace.
 | `SLACK_MCP_LOG_LEVEL`             | No        | `info`                    | Log-level for stdout or stderr. Valid values are: `debug`, `info`, `warn`, `error`, `panic` and `fatal`                                                                                                                                                                                   |
 | `SLACK_MCP_GOVSLACK`              | No        | `nil`                     | Set to `true` to enable [GovSlack](https://slack.com/solutions/govslack) mode. Routes API calls to `slack-gov.com` endpoints instead of `slack.com` for FedRAMP-compliant government workspaces.                                                                                          |
 | `SLACK_MCP_ENABLED_TOOLS`         | No        | `nil`                     | Comma-separated list of tools to register. If empty, all read-only tools and usergroups tools are registered; write tools (`conversations_add_message`, `reactions_add`, `reactions_remove`, `attachment_get_data`) require their specific env var OR must be explicitly listed here. When a write tool is listed here, it's enabled without channel restrictions. Available tools: `conversations_history`, `conversations_replies`, `conversations_add_message`, `reactions_add`, `reactions_remove`, `attachment_get_data`, `conversations_search_messages`, `channels_list`, `usergroups_list`, `usergroups_me`, `usergroups_create`, `usergroups_update`, `usergroups_users_update`. |
+| `SLACK_MCP_CHANNEL_WHITELIST`     | No        | `nil`                     | Fork addition. Comma-separated conversation IDs (`C…`, `G…`, `D…`) that may be read; all other channels and DMs are denied and hidden from listings. See [Channel whitelist](#channel-whitelist-fork-addition). |
 
 *You need one of: `xoxp` (user), `xoxb` (bot), or both `xoxc`/`xoxd` tokens for authentication.
+
+### Channel whitelist (fork addition)
+
+`SLACK_MCP_CHANNEL_WHITELIST` restricts which conversations can be read. Set it to a comma-separated list of conversation IDs, for example `C0123456789, G0123456789, D0123456789`. `C…`/`G…` are channels, private channels and group DMs, and `D…` are DMs. Whitespace around entries is ignored.
+
+- **IDs only.** Names are rejected because channels can be renamed. A channel's ID is at the bottom of its *About* tab in Slack. A DM's ID is in the Slack web URL (`app.slack.com/client/<team>/D…`), and `channels_list` with `channel_types=im` lists them (run it before setting the whitelist).
+- **Unset** means no restriction (upstream behaviour). If the variable is **set but empty**, has an empty entry (a stray comma), or has any entry that is not an uppercase `C…`/`G…`/`D…` ID, the server refuses to start.
+- **`conversations_history`, `conversations_replies`:** `#channel` and `@user` are resolved to an ID first. The call is denied unless that exact ID is whitelisted, so threads follow their conversation. Names that can't be resolved are denied. The error names neither the conversation nor its content.
+- **`channels_list`, `channels_me`, `slack://<workspace>/channels`:** only whitelisted conversations are listed.
+- **Not covered:** keep `conversations_search_messages`, `conversations_unreads`, `saved_list`, `attachment_get_data` and all write tools disabled when you rely on the whitelist. In addition:
+  - `users_search` returns the DM ID (`DMChannelID`) for any matching user. Reading that DM is still denied.
+  - The `slack://<workspace>/users` resource is not filtered. It holds user data, not conversations.
+  - Link unfurls and forwarded messages are not filtered. A message in a whitelisted conversation that links to or forwards a message from another conversation includes the text Slack attaches to it.
 
 ### Limitations matrix & Cache
 
